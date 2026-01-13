@@ -3,18 +3,15 @@ from logic import RepCounter
 from feedback import speak
 
 def main():
-    print("--- AI GYM TRAINER (TEAM B PROTOTYPE) ---")
-    print("Type an angle to test logic (e.g., 170 for standing, 80 for squat).")
+    print("--- AI GYM TRAINER (V2: FATIGUE EDITION) ---")
+    print("Type angles to simulate. Try waiting between inputs!")
     print("Type 'q' to quit.\n")
 
-    # Initialize KD's Logic
     counter = RepCounter()
-    
-    # Say hello (Shakki's Voice)
     speak("System Ready. Let's workout.")
 
     while True:
-        user_input = input("Enter Knee Angle: ")
+        user_input = input("\nEnter Knee Angle: ")
         
         if user_input.lower() == 'q':
             break
@@ -23,11 +20,18 @@ def main():
             angle = float(user_input)
             
             # Pass data to KD's Brain
-            new_rep_completed = counter.process_angle(angle)
+            # Now captures TWO values: rep_complete (True/False) AND message (String)
+            is_complete, message = counter.process_angle(angle)
             
-            # If rep is done, trigger Shakki's Voice
-            if new_rep_completed:
-                speak(str(counter.reps))
+            # If there is a message (either a number or a warning), speak it
+            if is_complete and message:
+                speak(message)
+                
+                # Visual Feedback in Console
+                if "slow" in message:
+                    print(f"⚠️  WARNING: {message}")
+                else:
+                    print(f"✅ Count: {message}")
                 
         except ValueError:
             print("Please enter a valid number.")
