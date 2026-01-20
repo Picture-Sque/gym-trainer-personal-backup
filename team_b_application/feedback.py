@@ -1,24 +1,24 @@
 import pyttsx3
 import threading
 
-def speak_worker(text):
+def speak_thread(text):
     """
-    Worker function that creates a fresh engine instance for every speech command.
-    This prevents the 'run loop already started' error.
+    This function runs in a separate thread.
+    It initializes a temporary engine for each command to avoid freezing the video.
     """
     try:
-        # Initialize a NEW engine instance just for this specific message
         engine = pyttsx3.init()
-        engine.setProperty('rate', 150) # Optional: Adjust speed
+        engine.setProperty('rate', 150) # Speed of speech
         engine.say(text)
         engine.runAndWait()
-    except RuntimeError:
-        # If the engine is somehow still busy, just ignore this specific error to keep app running
+    except:
         pass
 
 def speak(text):
     """
-    Call this function to say something without blocking the main program
+    Call this function from main.py.
+    It starts the speaking process in the background.
     """
-    thread = threading.Thread(target=speak_worker, args=(text,))
-    thread.start()
+    # We use a Thread so the camera doesn't freeze while the AI talks
+    t = threading.Thread(target=speak_thread, args=(text,))
+    t.start()
