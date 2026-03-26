@@ -341,6 +341,9 @@ def start_exercise(exercise_id):
             return
 
         session_start = _time.time()
+        workout_start_time = 0
+        workout_started = False
+        last_spoken_second = -1
         form_warnings = 0
 
         # Update stage now that trainer is initialized
@@ -359,8 +362,27 @@ def start_exercise(exercise_id):
 
             image, landmarks = vision.process_frame(frame)
 
+            # --- COUNTDOWN LOGIC ---
+            elapsed = _time.time() - session_start
+            countdown_seconds = 5
+            is_counting_down = elapsed < countdown_seconds
+            
+            if is_counting_down:
+                remaining = int(countdown_seconds - elapsed) + 1
+                if remaining != last_spoken_second and remaining <= 5:
+                    speak(str(remaining))
+                    last_spoken_second = remaining
+                
+                cv2.putText(image, f"STARTING IN: {remaining}", (120, 250),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 255), 4, cv2.LINE_AA)
+            else:
+                if not workout_started:
+                    workout_started = True
+                    workout_start_time = _time.time()
+                    speak("Go!")
+
             feedback_text = ""
-            if landmarks:
+            if landmarks and not is_counting_down:
                 rep_complete, feedback_text, angle = trainer.process(landmarks)
 
                 # --- HUD OVERLAY (drawn on the streamed frame) ---
@@ -424,14 +446,14 @@ def start_exercise(exercise_id):
         cap.release()
 
         # Save workout to database
-        duration = _time.time() - session_start
-        avg_speed = duration / max(trainer.reps, 1)
+        actual_duration = _time.time() - workout_start_time if workout_started else 0
+        avg_speed = actual_duration / max(trainer.reps, 1) if actual_duration > 0 else 0
         fatigue = 2 if trainer.game_over else 0
         if trainer.reps > 0:
             db.save_workout(
                 exercise=trainer.name,
                 reps=trainer.reps,
-                duration=round(duration, 1),
+                duration=round(actual_duration, 1),
                 avg_rep_speed=round(avg_speed, 2),
                 fatigue_level=fatigue,
                 form_warnings=form_warnings
